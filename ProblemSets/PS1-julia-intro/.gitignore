@@ -3,10 +3,16 @@
 .vscode/
 
 # Outputs & processed data
-/out/
-/data/processed/
+out/
+data/processed/
 
-# Common artifacts
+# Binary/derived artifacts
 *.jld
 *.dat
-*.csv
+
+# Keep raw CSVs tracked
+!data/raw/*.csv
+
+# (optional) ignore only generated CSVs
+out/*.csv
+data/processed/*.csv
