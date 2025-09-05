@@ -1,0 +1,12 @@
+# OS/editor
+.DS_Store
+.vscode/
+
+# Outputs & processed data
+/out/
+/data/processed/
+
+# Common artifacts
+*.jld
+*.dat
+*.csv
