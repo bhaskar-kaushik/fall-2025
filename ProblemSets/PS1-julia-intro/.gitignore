@@ -2,13 +2,6 @@
 .DS_Store
 .vscode/
 
-# Outputs & processed data
-
-# Binary/derived artifacts
-*.jld
-*.dat
-
 # Keep raw CSVs tracked
 !data/raw/*.csv
 
-# (optional) ignore only generated CSVs
