@@ -106,3 +106,120 @@ end
     @test s == 36
     @test_throws ArgumentError matrixops(A_small, [1 2 3]')
 end
+# -------------------------- Edge & boundary tests --------------------------
+
+@testset "q1 structure/IO edge tests" begin
+    Random.seed!(SEED)
+    A,B,C,D = q1()
+
+    # E equals vec(B) in the JLD artifact
+    d = JLD.load(joinpath(DIR_OUT, "matrixpractice.jld"))
+    @test haskey(d, "E")
+    @test d["E"] == vec(B)
+
+    # F has exact permuted shape (2,10,7)
+    @test haskey(d, "F")
+    F = d["F"]
+    @test size(F) == (2, 10, 7)
+
+    # Trying kron(C,F) must error (F is 3D)
+    @test_throws MethodError kron(C, F)
+end
+
+@testset "q2 edge & property tests" begin
+    Random.seed!(SEED)
+    A = -5 .+ 15 .* rand(10,7)
+    B = -2 .+ 15 .* randn(10,7)
+    C = hcat(A[1:5,1:5], B[1:5,6:7])
+
+    # Wrong sizes are rejected
+    @test_throws DimensionMismatch _q2_compute(A[:,1:6], B, C)
+    @test_throws DimensionMismatch _q2_compute(A, B[:,1:6], C)
+    @test_throws DimensionMismatch _q2_compute(A, B, C[:,1:6])
+
+    # Endpoints must be INCLUDED in Cprime
+    Cedge = fill(9.9, 5, 7)
+    Cedge[1,1] = -5.0
+    Cedge[1,2] = 5.0
+    Cedge[2,3] = 0.0
+    cache = _q2_compute(A, B, Cedge)
+    @test all(-5 .<= cache.Cprime .<= 5)
+    @test any(==( -5.0 ), cache.Cprime)
+    @test any(==(  5.0 ), cache.Cprime)
+    @test any(==(  0.0 ), cache.Cprime)
+
+    # Dummy column is binary and p in [0,1]
+    for t in 1:T
+        p = 0.75*(6 - t)/5
+        @test 0.0 <= p <= 1.0
+        @test all(x -> x == 0.0 || x == 1.0, cache.X[:,2,t])
+    end
+
+    # σ=0 at t=1 should give EXACT zero std for X[:,3,1]
+    @test std(cache.X[:,3,1]) == 0.0
+
+    # Noise properties in Y (mean≈0, std≈0.36)
+    det = [sum(cache.X[n,:,t] .* cache.β[:,t]) for n in 1:N, t in 1:T]
+    eps = vec(cache.Y .- det)
+    @test isapprox(mean(eps), 0.0; atol=0.02)
+    @test isapprox(std(eps), 0.36; atol=0.03)
+
+    # Reproducibility with explicit RNG (bit-for-bit)
+    rng1 = MersenneTwister(SEED)
+    cacheA = _q2_compute(A, B, Cedge; rng=rng1)
+    rng2 = MersenneTwister(SEED)
+    cacheB = _q2_compute(A, B, Cedge; rng=rng2)
+    @test cacheA.X == cacheB.X
+    @test cacheA.Y == cacheB.Y
+end
+
+@testset "q3 helper robustness tests" begin
+    # find_col should be insensitive to case/spacing/punct
+    df_names = DataFrame("  Never  Married " => [1,0], "Coll-Grad" => [0,1])
+    @test find_col(df_names, "never_married") === Symbol("  Never  Married ")
+    @test find_col(df_names, "collgrad")      === Symbol("Coll-Grad")
+
+    # replace_nothing_with_missing! should actually convert
+    df = DataFrame(a = Any[1, nothing], b = Any[nothing, "x"])
+    replace_nothing_with_missing!(df)
+    @test df.a[2] === missing
+    @test df.b[1] === missing
+
+    # Race proportions sum to ~1 (requires processed file from q3)
+    if isfile(joinpath(DIR_PROC, "nlsw88_processed.csv"))
+        nlsw = CSV.read(joinpath(DIR_PROC, "nlsw88_processed.csv"), DataFrame)
+        rac = find_col(nlsw, "race")
+        @test !isnothing(rac)
+        counts = combine(groupby(nlsw, rac), nrow => :count)
+        @test isapprox(sum(counts.count), nrow(nlsw); atol=0)
+        @test isapprox(sum(counts.count ./ sum(counts.count)), 1.0; atol=1e-12)
+    else
+        @test_skip "processed CSV not present"
+    end
+end
+
+@testset "q4 defensive tests" begin
+    # Trivial cases
+    A0 = zeros(3,3); B1 = ones(3,3)
+    h, cp, s = matrixops(A0, B1)
+    @test h == zeros(3,3)
+    @test cp == zeros(3,3)              # A0' * B1 = 0
+    @test s == sum(B1)                  # sum(A0 + B1) = sum(B1)
+
+    # Non-finite propagation
+    A2 = copy(B1); A2[1,1] = NaN
+    h, cp, s = matrixops(A2, B1)
+    @test isnan(h[1,1])
+    @test isnan(s)
+
+    # Vectors also work (not only 2-D)
+    v1 = [1.0, 2, 3]
+    v2 = [4.0, 5, 6]
+    h, cp, s = matrixops(v1, v2)
+    @test h == v1 .* v2
+    @test cp == v1' * v2
+    @test s == sum(v1 .+ v2)
+
+    # Mismatched sizes throw
+    @test_throws ArgumentError matrixops(v1, [1.0, 2.0])
+end

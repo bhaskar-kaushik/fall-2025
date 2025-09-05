@@ -39,25 +39,34 @@ const BIN_N2_P  = (20, 0.5)   # for X[:,6,:]
 
 # -------------------------- Helpers --------------------------
 
-"""
-    normalize_key(s)
+# ---- Robust column lookup ----
 
-Lowercase and replace non-alphanumerics with `_`. Used for case/spacing-robust
-column name resolution.
-"""
-normalize_key(s::AbstractString) = replace(lowercase(s), r"[^a-z0-9]+" => "_")
+# Lowercase, trim, remove non-alphanumerics; works for Symbols & Strings
+normalize_key(x) = normalize_key(string(x))
+normalize_key(s::AbstractString) = replace(lowercase(strip(s)), r"[^a-z0-9]+" => "")
 
 """
-    find_col(df, target) -> Symbol | nothing
+    find_col(cols_or_df, target) -> Symbol | nothing
 
-Return the `Symbol` for column `target` in `df` using case/spacing/punctuation
-insensitive matching; return `nothing` if not found.
+Case/spacing/punctuation-insensitive lookup.
+Accepts either a DataFrame or a vector of column names (Symbols/Strings).
 """
-function find_col(df::AbstractDataFrame, target::AbstractString)
-    key = normalize_key(target)
-    table = Dict(normalize_key(n) => Symbol(n) for n in names(df))
-    return get(table, key, nothing)
+function find_col(cols_or_df, target::AbstractString)
+    # Accept DataFrame or a plain names vector
+    colnames = cols_or_df isa AbstractDataFrame ? names(cols_or_df) : collect(cols_or_df)
+
+    # Build a canonical-name -> original Symbol map; keep first on collisions
+    canon_to_sym = Dict{String,Symbol}()
+    for n in colnames
+        k = normalize_key(n)
+        if !haskey(canon_to_sym, k)
+            canon_to_sym[k] = Symbol(n)
+        end
+    end
+
+    return get(canon_to_sym, normalize_key(target), nothing)
 end
+
 
 """
     replace_nothing_with_missing!(df) -> df
@@ -121,13 +130,15 @@ function q1()
 end
 
 # -------------------------- Q2 --------------------------
+# -------------------------- Q2 --------------------------
 
 """
-    _q2_compute(A,B,C) -> NamedTuple
+    _q2_compute(A,B,C; rng=Random.default_rng()) -> NamedTuple
 
 Internal worker for Q2 that returns all derived objects used by tests.
+All randomness is driven by the provided `rng`.
 """
-function _q2_compute(A::AbstractMatrix, B::AbstractMatrix, C::AbstractMatrix)
+function _q2_compute(A::AbstractMatrix, B::AbstractMatrix, C::AbstractMatrix; rng::AbstractRNG=Random.default_rng())
     if size(A)!=(10,7) || size(B)!=(10,7)
         throw(DimensionMismatch("A and B must be 10×7; got $(size(A)), $(size(B))"))
     end
@@ -154,15 +165,15 @@ function _q2_compute(A::AbstractMatrix, B::AbstractMatrix, C::AbstractMatrix)
     # (c) build X (N×K×T)
     X = Array{Float64,3}(undef, N, K, T)
     X[:,1,:] .= 1.0
-    X[:,5,:] .= rand(Binomial(BIN_N1_P[1], BIN_N1_P[2]), N, 1)
-    X[:,6,:] .= rand(Binomial(BIN_N2_P[1], BIN_N2_P[2]), N, 1)
+    X[:,5,:] .= rand(rng, Binomial(BIN_N1_P[1], BIN_N1_P[2]), N, 1)
+    X[:,6,:] .= rand(rng, Binomial(BIN_N2_P[1], BIN_N2_P[2]), N, 1)
     for t in 1:T
         p = 0.75 * (6 - t) / 5
-        X[:,2,t] = rand(N) .< p
+        X[:,2,t] = rand(rng, N) .< p
         μ3, σ3 = 15 + (t-1), 5*(t-1)
-        X[:,3,t] = μ3 .+ (σ3 == 0 ? zeros(N) : σ3 .* randn(N))
+        X[:,3,t] = μ3 .+ (σ3 == 0 ? zeros(N) : σ3 .* randn(rng, N))
         μ4, σ4 = pi*(6 - t)/3, 1/exp(1)
-        X[:,4,t] = μ4 .+ σ4 .* randn(N)
+        X[:,4,t] = μ4 .+ σ4 .* randn(rng, N)
     end
 
     # (d) β (K×T)
@@ -174,19 +185,19 @@ function _q2_compute(A::AbstractMatrix, B::AbstractMatrix, C::AbstractMatrix)
           for k in 1:K, t in 1:T ]
 
     # (e) Y (N×T)
-    Y = [ sum(X[n, :, t] .* β[:, t]) + 0.36*randn()
+    Y = [ sum(X[n, :, t] .* β[:, t]) + SIGMA_Y*randn(rng)
           for n in 1:N, t in 1:T ]
 
     return (; AB, AB2, Cprime, Cprime2, X, β, Y)
 end
 
 """
-    q2(A,B,C) -> nothing
+    q2(A,B,C; rng=Random.default_rng()) -> nothing
 
 Wrapper that validates inputs and computes Q2 quantities.
 """
-function q2(A::AbstractMatrix, B::AbstractMatrix, C::AbstractMatrix)
-    _ = _q2_compute(A,B,C)
+function q2(A::AbstractMatrix, B::AbstractMatrix, C::AbstractMatrix; rng::AbstractRNG=Random.default_rng())
+    _ = _q2_compute(A,B,C; rng=rng)
     return nothing
 end
 
