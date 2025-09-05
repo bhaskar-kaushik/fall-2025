@@ -17,3 +17,7 @@ ProblemSets/PS1-julia-intro/data/raw/nlsw88.csv
 ## Reproducibility
 The Julia environment is pinned by Project.toml/Manifest.toml.
 Scripts auto-activate and instantiate the environment on run.
+
+---
+
+**Grading snapshot:** See tag `ps1-grading-snapshot` (includes generated outputs in `out/` and `data/processed/`).
