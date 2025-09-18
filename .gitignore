@@ -35,6 +35,7 @@ ProblemSets/PS8-factor/PS8solutions.jl*
 ProblemSets/PS8-factor/PS8stata*.*
 ProblemSets/PS8-factor/PS8sim.*
 ProblemSets/PS8-factor/simdata.csv
+ProblemSets/*/PS*Ransom*.jl
 References/*.tex
 References/*.pdf
 References/TrainTextbook/*.pdf
