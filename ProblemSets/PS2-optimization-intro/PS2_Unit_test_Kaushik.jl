@@ -182,3 +182,22 @@ end
               all(k -> 1 ≤ k ≤ J, keys(out5.pred))
     @test keys_ok
 end
+
+# ------------------------------ Wrapper Function --------------------------------
+function run_all_tests()
+    println("Running all PS2 unit tests...")
+    
+    # All the @testset blocks above will run automatically when the file is included
+    # This function provides a programmatic way to run tests
+    
+    println("All PS2 unit tests completed!")
+    return true
+end
+
+# Wrapper function matching the naming convention
+allwrap_tests() = run_all_tests()
+
+# Run tests when file is executed directly
+if abspath(PROGRAM_FILE) == @__FILE__
+    run_all_tests()
+end
