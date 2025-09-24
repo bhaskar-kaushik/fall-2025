@@ -1,8 +1,10 @@
+
 # ============================================================
 # PS3 – GEV Models (ECON 6343): Main Script
 # Student: Bhaskar Kaushik
 # Course: ECON 6343 - Econometrics III
 # Professor: Tyler Ransom, University of Oklahoma
+# AI note (required by syllabus): "Used Claude and ChatGPT to debug and refine code/tests for ECON 6343 Fall 2025 PS3."
 # ============================================================
 
 using Random, LinearAlgebra, Statistics

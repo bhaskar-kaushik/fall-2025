@@ -1,3 +1,4 @@
+# AI note (required by syllabus): "Used Claude and ChatGPT to debug and refine code/tests for ECON 6343 Fall 2025 PS3."
 # Need to import Normal distribution for p-value calculation
 using Distributions
 
