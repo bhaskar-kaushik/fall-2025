@@ -61,14 +61,14 @@ function nested_logit_with_Z(theta, X, Z, y)
     N, K = size(X)
     J = size(Z, 2)
     @assert J == 8 "PS3 uses 8 alternatives"
-    @assert length(theta) == 2K + 3 "theta must be 2K + 3"
+    @assert length(theta) == 2*K + 3 "theta must be 2*K + 3"
     @assert size(Z,1) == N
     @assert all(1 ≤ yy ≤ J for yy in y)
 
     βWC = theta[1:K]
-    βBC = theta[K+1:2K]
-    λWC = clamp(theta[2K+1], 0.01, 1.0)
-    λBC = clamp(theta[2K+2], 0.01, 1.0)
+    βBC = theta[K+1:2*K]
+    λWC = clamp(theta[2*K+1], 0.01, 1.0)
+    λBC = clamp(theta[2*K+2], 0.01, 1.0)
     γ   = theta[end]
 
     WC = (1,2,3)
@@ -78,17 +78,9 @@ function nested_logit_with_Z(theta, X, Z, y)
     @inbounds for i in 1:N
         Zi8 = Z[i, 8]
 
-        # Inclusive values
-        SWC = 0.0
-        for j in WC
-            Vij = dot(X[i, :], βWC) + γ * (Z[i, j] - Zi8)
-            SWC += exp(Vij/λWC)
-        end
-        SBC = 0.0
-        for j in BC
-            Vij = dot(X[i, :], βBC) + γ * (Z[i, j] - Zi8)
-            SBC += exp(Vij/λBC)
-        end
+        # inclusive values (scaled by λ)
+        SWC = sum(exp((dot(X[i, :], βWC) + γ*(Z[i, j] - Zi8))/λWC) for j in WC)
+        SBC = sum(exp((dot(X[i, :], βBC) + γ*(Z[i, j] - Zi8))/λBC) for j in BC)
 
         D = 1.0 + SWC^λWC + SBC^λBC
 
@@ -129,9 +121,9 @@ end
 
 function optimize_nested_logit(X, Z, y; rng_seed=123, g_tol=1e-6, iterations=100_000)
     N, K = size(X)
-    start = [fill(0.01, 2K); 0.7; 0.7; 0.01]
+    start = vcat(fill(0.01, 2*K), [0.7, 0.7, 0.01])
     lower = fill(-Inf, length(start)); upper = fill( Inf, length(start))
-    lower[2K+1:2K+2] .= 0.01;  upper[2K+1:2K+2] .= 1.0
+    lower[2*K+1:2*K+2] .= 0.01;  upper[2*K+1:2*K+2] .= 1.0
     return Optim.optimize(θ -> nested_logit_with_Z(θ, X, Z, y),
                           lower, upper, start,
                           Optim.Fminbox(Optim.LBFGS()),
@@ -263,8 +255,8 @@ function allwrap(X, Z, y; df=nothing)
     println("done.\n")
 
     ll_nl = -Optim.minimum(res_nl)
-    λWC = θn[2K+1]; λBC = θn[2K+2]; γn = θn[end]
-    se_λWC = sen[2K+1]; se_λBC = sen[2K+2]; se_γn = sen[end]
+    λWC = θn[2*K+1]; λBC = θn[2*K+2]; γn = θn[end]
+    se_λWC = sen[2*K+1]; se_λBC = sen[2*K+2]; se_γn = sen[end]
 
     println("NL: Log-likelihood = ", round(ll_nl, digits=4))
     println("λ_WC=", round(λWC, digits=4), "  (1-λ_WC=", round(correlation_measure(λWC), digits=4), ")  SE=", round(se_λWC, digits=4))
@@ -275,15 +267,15 @@ function allwrap(X, Z, y; df=nothing)
     print("\nEstimating restricted NL (λ_WC=λ_BC=1)... "); flush(stdout)
     
     function restricted_objective(theta_reduced)
-        theta_full = zeros(2K + 3)
-        theta_full[1:2K] = theta_reduced[1:2K]
-        theta_full[2K+1] = 1.0
-        theta_full[2K+2] = 1.0
+    theta_full = zeros(2*K + 3)
+    theta_full[1:2*K] = theta_reduced[1:2*K]
+    theta_full[2*K+1] = 1.0
+    theta_full[2*K+2] = 1.0
         theta_full[end] = theta_reduced[end]
         return nested_logit_with_Z(theta_full, X, Z, y)
     end
 
-    start_reduced = [θn[1:2K]; θn[end]]
+    start_reduced = vcat(θn[1:2*K], θn[end])
     res_restr = Optim.optimize(restricted_objective, start_reduced,
                               Optim.LBFGS(),
                               Optim.Options(g_tol=1e-6, iterations=50_000, show_trace=false))

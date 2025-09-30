@@ -47,10 +47,18 @@ function mlogit_with_Z(theta, X, Z, y)
     dem = zeros(T, N)
     
     # Fill in: compute numerator for each choice j
-    for j = 1:J
-        # num[:,j] = exp.(...)
-    end
     
+    for j = 1:J
+        # For j = 1,...,7: use corresponding beta_j
+        # For j = 8: beta_8 = 0 (normalized)
+        if j <= J-1
+            num[:,j] = exp.(X * bigAlpha[:,j] .+ gamma * (Z[:,j] .- Z[:,J]))
+        else  # j = J = 8
+            num[:,j] = exp.(zeros(N))  # exp(0) = 1
+        end
+    end
+
+
     # Fill in: compute denominator (sum of numerators)
     # dem = sum(num, dims=2)
     
@@ -101,11 +109,11 @@ function nested_logit_with_Z(theta, X, Z, y, nesting_structure)
     # Fill in: compute linear indices for each choice
     for j = 1:J
         if j in nesting_structure[1]  # White collar
-            # lidx[:,j] = exp.((X*bigAlpha[:,j] .+ (Z[:,j] .- Z[:,J])*gamma) ./ lambda[1])
+             lidx[:,j] = exp.((X*bigAlpha[:,j] .+ (Z[:,j] .- Z[:,J])*gamma) ./ lambda[1])
         elseif j in nesting_structure[2]  # Blue collar
-            # lidx[:,j] = exp.((X*bigAlpha[:,j] .+ (Z[:,j] .- Z[:,J])*gamma) ./ lambda[2])
+             lidx[:,j] = exp.((X*bigAlpha[:,j] .+ (Z[:,j] .- Z[:,J])*gamma) ./ lambda[2])
         else  # Other
-            # lidx[:,j] = exp.(zeros(N))
+             lidx[:,j] = exp.(zeros(N))
         end
     end
     
@@ -122,6 +130,10 @@ function nested_logit_with_Z(theta, X, Z, y, nesting_structure)
     end
     
     # Fill in: compute probabilities and log-likelihood
+    # P = num ./ dem
+    # loglike = -sum(bigY .* log.(P))   
+
+
     # P = num ./ repeat(dem, 1, J)
     # loglike = -sum(bigY .* log.(P))
     
@@ -158,6 +170,78 @@ function optimize_nested_logit(X, Z, y, nesting_structure)
     
     return result.minimizer
 end
+
+function nested_logit_with_Z(theta, X, Z, y)
+    # theta layout (per spec):
+    # [β_WC (K), β_BC (K), λ_WC, λ_BC, γ]
+    K = size(X, 2)
+    β_WC = theta[1:K]
+    β_BC = theta[K+1:2K]
+    λ_WC = theta[2K+1]
+    λ_BC = theta[2K+2]
+    γ    = theta[end]
+
+    # Enforce bounds 0 < λ ≤ 1 (singleton J handled separately)
+    λ_WC = min(max(λ_WC, 0.01), 1.0)
+    λ_BC = min(max(λ_BC, 0.01), 1.0)
+
+    # Indices per PS3 nesting structure
+    J = 8                          # total alts (Other is 8)
+    WC = (1, 2, 3)                 # White-collar nest
+    BC = (4, 5, 6, 7)              # Blue-collar nest (includes Transport)
+    N = size(X, 1)
+
+    # Negative log-likelihood accumulator
+    nll = 0.0
+
+    @inbounds for i in 1:N
+        # Precompute wage diffs vs base J (Other)
+        # ZiJ = Z[i,8], so Zdiff[j] = Z[i,j] - Z[i,8]
+        ZiJ = Z[i, J]
+        # Utilities divided by λ (within-nest) — common β per nest
+        # WC part
+        WC_terms = ntuple(j -> exp(((dot(X[i, :], β_WC) + γ * (Z[i, j] - ZiJ)) / λ_WC)), length(WC))
+        S_WC = 0.0
+        @inbounds for t in WC_terms
+            S_WC += t
+        end
+        # BC part
+        BC_terms = ntuple(k -> exp(((dot(X[i, :], β_BC) + γ * (Z[i, BC[k]] - ZiJ)) / λ_BC)), length(BC))
+        S_BC = 0.0
+        @inbounds for t in BC_terms
+            S_BC += t
+        end
+
+        # Top-level denominator: 1 + S_WC^λ_WC + S_BC^λ_BC  (Other = 1)
+        D = 1.0 + S_WC^λ_WC + S_BC^λ_BC
+
+        # Probability of the observed choice y[i]
+        yi = y[i]
+        if yi in WC
+            # j ∈ WC:
+            # P_ij = exp((Xβ_WC + γ(Zij−ZiJ))/λ_WC) * S_WC^(λ_WC−1) / D
+            num = exp((dot(X[i, :], β_WC) + γ * (Z[i, yi] - ZiJ)) / λ_WC) * S_WC^(λ_WC - 1.0)
+            P = num / D
+        elseif yi in BC
+            # j ∈ BC:
+            # P_ij = exp((Xβ_BC + γ(Zij−ZiJ))/λ_BC) * S_BC^(λ_BC−1) / D
+            num = exp((dot(X[i, :], β_BC) + γ * (Z[i, yi] - ZiJ)) / λ_BC) * S_BC^(λ_BC - 1.0)
+            P = num / D
+        else
+            # yi == J (Other):
+            # P_iJ = 1 / D
+            P = 1.0 / D
+        end
+
+        # Accumulate NLL (guard tiny probs)
+        P = max(P, 1e-12)
+        nll -= log(P)
+    end
+
+    return nll
+end
+
+
 
 #---------------------------------------------------
 # Main Function (Question 4)
