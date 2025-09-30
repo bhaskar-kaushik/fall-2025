@@ -1,6 +1,9 @@
 # Problem Set 4 Unit Tests
 # ECON 6343: Econometrics III
 # Student: Bhaskar Kaushik
+# Date: Fall 2025
+# Professor: Tyler Ransom, University of Oklahoma
+# AI note (required by syllabus): "Used Claude to help design and debug unit tests for ECON 6343 Fall 2025 PS4."
 
 using Test
 using Random, LinearAlgebra, Statistics, DataFrames, Distributions

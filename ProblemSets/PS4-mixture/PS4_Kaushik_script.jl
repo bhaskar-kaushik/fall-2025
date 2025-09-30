@@ -4,7 +4,7 @@
 # Student: Bhaskar Kaushik
 # Date: Fall 2025 
 # Professor: Tyler Ransom, University of Oklahoma
-# AI note (required by syllabus): "Used Claude to include lecture notes and class slides into the class codes, to make sure the code reflects lecture content."
+# AI note (required by syllabus): "Used Claude and ChatGPT to debug and refine code/tests for ECON 6343 Fall 2025 PS4."
 # ============================================================================
 
 # Load required packages
