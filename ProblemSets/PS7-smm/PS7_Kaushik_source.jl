@@ -5,9 +5,6 @@
 # Student: Bhaskar Kaushik
 ################################################################################
 
-using Random, LinearAlgebra, Statistics
-using Optim
-using DataFrames, CSV, HTTP
 
 ################################################################################
 # Core Functions
