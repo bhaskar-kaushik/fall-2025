@@ -39,3 +39,13 @@ ProblemSets/*/PS*Ransom*.jl
 References/*.tex
 References/*.pdf
 References/TrainTextbook/*.pdf
+
+# macOS junk
+.DS_Store
+
+# Stata temp
+*.stswp
+
+# Finder duplicate suffixes
+* 2.*
+* 2
