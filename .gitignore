@@ -7,3 +7,12 @@
 # Finder duplicate suffixes (files like "name 2.ext")
 * 2.*
 * 2
+
+# LaTeX build artifacts
+*.aux
+*.log
+*.out
+*.toc
+*.fdb_latexmk
+*.fls
+*.synctex.gz
