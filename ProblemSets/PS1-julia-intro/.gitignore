@@ -1,0 +1,7 @@
+# OS/editor
+.DS_Store
+.vscode/
+
+# Keep raw CSVs tracked
+!data/raw/*.csv
+

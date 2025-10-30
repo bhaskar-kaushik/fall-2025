@@ -226,33 +226,43 @@ function sim_logit(N=100_000, J=4)
     # TODO: Generate X matrix
     # Include intercept, and K-1 other covariates with different distributions
     # Example: X = hcat(ones(N), randn(N), 2 .+ 2 .* randn(N))
-    # X = ...
+    X = hcat(ones(N), randn(N), rand(N) .> 0.5, 10 .* randn(N))
     
     # TODO: Create coefficient matrix β (dimension K×J)
     # Last column should be zeros (normalization)
     # Example for J=4: β = hcat([1, -1, 0.5], [-2, 0.5, 0.3], [0, -0.5, 2], zeros(3))
     if J == 4
-        # β = ...
+        β = hcat([1, -1, 0.5, 0.25]
+        , [-2, 0.5, 0.3, -0.5]
+        , [0, -0.5, 2, 1.5]
+        , zeros(4))
+
     else
+
         # Generate random coefficients
-        # β = ...
+        β = -2 .+ 4 .* rand(size(X,2), J)
+        β = β .- β[:,end]   # Normalize last column to zero
     end
     
     # TODO: Compute choice probabilities P (dimension N×J)
-    # P_ij = exp(X_i'β_j) / Σ_k exp(X_i'β_k)
-    # P = ...
-    
-    # TODO: Draw uniform random variables
-    # draw = rand(N)
-    
+
+    P = exp.(X*β) ./ sum.(eachrow(exp.(X*β)))
+
+    @assert size(P) == (N, J) "Check dimensions of P and returns true if correct or stops execution"
+
+    # TODO: Draw uniform random Numbers
+    draw = rand(N) # we are comparing flipped coin with cumulative choice probabilities and assign choices accordingly, We are partioning the unit in
+
     # TODO: Generate choices based on cumulative probabilities
     # For each person i, find j such that:
     # Σ_{k=j}^J P_ik > ε_i
     Y = zeros(N)
-    # for j = 1:J
-    #     # Hint: sum(P[:,j:J]; dims=2) gives cumulative probabilities
-    #     # Y += ...
-    # end
+    for j = 1:J
+        Ytemp = sum(P[:,j:J]; dims=2) .> draw
+        # Hint: sum(P[:,j:J]; dims=2) gives cumulative probabilities
+        Y += (sum(P[:,j:J]; dims=2) .> draw) 
+        
+    end
     
     return Y, X
 end
@@ -314,9 +324,9 @@ function mlogit_smm_overid(α, X, y, D)
     
     # TODO: Create actual choice indicators
     bigY = zeros(N, J)
-    # for j = 1:J
-    #     bigY[:,j] = ...
-    # end
+    for j = 1:J
+        bigY[:,j] = Y .== j 
+    end
     
     # TODO: Initialize simulated choice frequencies
     bigỸ = zeros(N, J)

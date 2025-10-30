@@ -1,0 +1,98 @@
+    
+========================================
+SUGGESTED RESULTS SECTION FOR PAPER
+========================================
+
+4. Empirical Results
+
+4.1 Data and Estimation
+
+We apply our framework to the bus engine replacement data from Rust (1987). 
+[Cite Table 1 for descriptive statistics]. The data contains replacement 
+decisions for [N] buses over [T] periods. We estimate the model using the 
+two-step CCP procedure proposed by Hotz and Miller (1993).
+
+[Table 2 about here]
+
+Table 2 presents our structural parameter estimates. The coefficient on 
+odometer is negative and significant (θ̂_x = [value], SE = [value]), indicating 
+that higher mileage reduces utility. The branded bus coefficient is [positive/negative], 
+suggesting [interpretation].
+
+4.2 Implicit State Prices
+
+Using the estimated transition probabilities and discount factor β = 0.9, we 
+compute implicit state prices q_d(x'|x) = β·f(x'|x,d) for both actions. 
+Figure 1 illustrates the structure of these prices.
+
+[Figure 1 about here]
+
+Several patterns emerge. First, under the "keep" action (d=0), probability 
+mass concentrates on higher mileage states, reflecting continued deterioration. 
+Second, under "replace" (d=1), all probability mass shifts to the lowest 
+mileage state, as the engine resets. Third, these different probability 
+structures generate distinct implicit valuations of future states.
+
+Table 3 presents the continuation values weighted by these implicit prices.
+
+[Table 3 about here]
+
+At low mileage states, the option value of replacement is [negative/positive] 
+(EV_replace - EV_keep = [value]), indicating that continuation under the current 
+engine dominates. As mileage increases, this option value [rises/falls], reaching 
+[value] at high mileage states. The implicit premium—measuring the extra weight 
+on unfavorable high-mileage states when keeping versus replacing—increases from 
+[value] to [value] as current mileage rises.
+
+[Figure 2 about here]
+
+Figure 2 shows how option values vary across the entire mileage distribution. 
+The relationship is [monotonic/non-monotonic], with [interpretation].
+
+4.3 Heterogeneity in Implicit State Prices
+
+Agents with different characteristics face different transition probabilities, 
+generating heterogeneous implicit state prices. Table 4 compares branded versus 
+non-branded buses.
+
+[Table 4 about here]
+
+Branded buses exhibit [higher/lower] continuation values under both actions. 
+The option value of replacement differs by [value] units between groups, 
+equivalent to [X]% of the baseline. This heterogeneity arises from [explanation: 
+different failure rates, maintenance schedules, or usage patterns].
+
+4.4 Willingness to Pay
+
+We convert option values into dollar equivalents using the estimated marginal 
+utility of mileage. Table 5 reports summary statistics.
+
+[Table 5 about here]
+
+On average, bus operators implicitly value avoiding high-mileage states at 
+[value] per expected breakdown. This varies from [min] to [max] across 
+states. Branded buses show [higher/lower] willingness to pay ([value] vs 
+[value]), consistent with their [interpretation].
+
+These estimates provide a revealed-preference measure of breakdown costs that 
+does not require observing actual breakdown events or their direct costs.
+
+4.5 Decomposition and Interpretation
+
+Figure 3 decomposes the value function into flow utility and continuation 
+components.
+
+[Figure 3 about here]
+
+The continuation value term, weighted by implicit state prices, accounts for 
+[XX]% of total value at low mileage and [YY]% at high mileage. This demonstrates 
+the quantitative importance of forward-looking behavior and shows how implicit 
+state prices aggregate future outcomes into current decisions.
+
+Our findings show that conditional choice probabilities, when properly scaled, 
+reveal agents' implicit valuation of future states—analogous to how Arrow-Debreu 
+prices reveal market valuations in complete markets. This "behavioral pricing 
+kernel" provides a unified framework for understanding dynamic choice under 
+uncertainty.
+
+========================================
